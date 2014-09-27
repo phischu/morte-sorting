@@ -1,67 +1,55 @@
-{-# LANGUAGE RankNTypes,NoImplicitPrelude,ScopedTypeVariables #-}
+{-# LANGUAGE RankNTypes,NoImplicitPrelude,ScopedTypeVariables,ExistentialQuantification,DeriveFunctor #-}
 module MorteSorting where
 
-import Prelude (Int,(+),undefined)
+import Data.Functor (Functor,fmap)
+import Data.Function((.))
+import Prelude (Ord,(<=),undefined)
 
-const :: a -> b -> a
-const x _ = x
+fromList :: [a] -> List a
+fromList [] = Mu (\f -> f Empty)
+fromList (a:as) = wrap (Cons a (fromList as))
 
-type Bool = forall x . x -> x -> x
+toList :: Stream a -> [a]
+toList stream = case unwrap stream of
+    Empty -> []
+    Cons a stream' -> a : toList stream'
 
-true :: Bool
-true x _ = x
+data Mu f = Mu {unMu :: forall x . (f x -> x) -> x}
 
-false :: Bool
-false _ y = y
+data Nu f = forall x .  Nu ((x -> f x,x))
 
-bool :: Bool -> x -> x -> x
-bool b = b
+data L a x = Empty | Cons a x deriving (Functor)
 
-type List a = forall x . (a -> x -> x) -> x -> x
+type List a = Mu (L a)
 
-empty :: List a
-empty _ nil = nil
+type Stream a = Nu (L a)
 
-prepend :: forall x a . a -> ((a -> x -> x) -> x -> x) -> ((a -> x -> x) -> x -> x)
-prepend x l cons nil = cons x (l cons nil)
+fold :: (f x -> x) -> Mu f -> x
+fold f mu = unMu mu f
 
-foldr :: forall x a . ((a -> x -> x) -> x -> x) -> (a -> x -> x) -> x -> x
-foldr l = l
+unfold :: (x -> f x) -> x -> Nu f
+unfold f x = Nu (f,x)
 
-type Pair a b = forall x . (a -> b -> x) -> x
+wrap :: (Functor f) => f (Mu f) -> Mu f
+wrap fmu = Mu (\f -> f (fmap (fold f) fmu))
 
-pair :: a -> b -> Pair a b
-pair x y runPair = runPair x y
+unwrap :: (Functor f) => Nu f -> f (Nu f)
+unwrap (Nu (f,s)) = fmap (unfold f) (f s)
 
-fst :: Pair a b -> a
-fst runPair = runPair (\x _ -> x)
+insertionSort :: (Ord a) => List a -> Stream a
+insertionSort = fold insert
 
-snd :: Pair a b -> b
-snd runPair = runPair (\_ y -> y)
+insert :: (Ord a) => L a (Stream a) -> Stream a
+insert = unfold (swap . fmap unwrap)
 
-append :: List a -> List a -> List a
-append l1 l2 = foldr l1 prepend (foldr l2 prepend empty)
+selectionSort :: (Ord a) => List a -> Stream a
+selectionSort = unfold select
 
-sort :: (a -> a -> Bool) -> List a -> List a
-sort compare l = foldr l (insert compare) empty
+select :: (Ord a) => List a -> L a (List a)
+select = fold (fmap wrap . swap)
 
-insert :: forall x a . (a -> a -> Bool) -> a -> ((a -> x -> x) -> x -> x) -> ((a -> x -> x) -> x -> x)
-insert compare x l cons nil = case head l of
-    Nothing -> cons x nil
-    Just y -> case compare x y of
-        True -> cons x (insert compare y rest cons nil)
-        False -> cons y (insert compare x rest cons nil)
-
-example :: List Int
-example cons nil = cons 1 (cons 2 (cons 3 nil))
-
-map :: (a -> b) -> List a -> List b
-map f l cons = l (\a x -> cons (f a) x)
-
-
-result :: Int
-result = foldr (map (+ 1) example) (+) 0
-
-
-
+swap :: (Ord a) => L a (L a x) -> L a (L a x)
+swap Empty = Empty
+swap (Cons a Empty) = Cons a Empty
+swap (Cons a1 (Cons a2 x)) = if a1 <= a2 then Cons a1 (Cons a2 x) else (Cons a2 (Cons a1 x))
 
