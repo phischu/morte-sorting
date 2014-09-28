@@ -14,7 +14,7 @@ toList stream = case unwrap stream of
     Empty -> []
     Cons a stream' -> a : toList stream'
 
-data Mu f = Mu {unMu :: forall x . (f x -> x) -> x}
+data Mu f = Mu (forall x . (f x -> x) -> x)
 
 data Nu f = forall x .  Nu ((x -> f x,x))
 
@@ -25,7 +25,7 @@ type List a = Mu (L a)
 type Stream a = Nu (L a)
 
 fold :: (f x -> x) -> Mu f -> x
-fold f mu = unMu mu f
+fold f (Mu mu) = mu f
 
 unfold :: (x -> f x) -> x -> Nu f
 unfold f x = Nu (f,x)
