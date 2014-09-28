@@ -1,70 +1,59 @@
-{-# LANGUAGE ExistentialQuantification #-}
-module HaskellSorting where
+{-# LANGUAGE RankNTypes,NoImplicitPrelude,ExistentialQuantification,DeriveFunctor #-}
+module MorteSorting where
 
-import Prelude hiding (foldr)
+import Data.Functor (Functor,fmap)
+import Data.Function((.))
+import Prelude (Ord,(<=),undefined)
 
-data ListF a x = Empty | Cons a x
+fromList :: [a] -> List a
+fromList [] = wrap Empty
+fromList (a:as) = wrap (Cons a (fromList as))
 
-type Fold f x = (f x -> x) -> x
+toList :: Stream a -> [a]
+toList stream = case unwrap stream of
+    Empty -> []
+    Cons a stream' -> a : toList stream'
 
-fold :: Fold f x -> (f x -> x) -> x
-fold = id
+insertionSort :: (Ord a) => List a -> Stream a
+insertionSort = fold insert
 
-inn :: (Functor f) => f (Fold f x) -> Fold f x
-inn f u = u (fmap (\fuu -> fuu u) f)
+insert :: (Ord a) => L a (Stream a) -> Stream a
+insert = unfold (swap . fmap unwrap)
 
-unInn :: (Functor f) => Fold f x -> f (Fold f x)
-unInn = undefined
+selectionSort :: (Ord a) => List a -> Stream a
+selectionSort = unfold select
 
-type Unfold f x = (x -> f x,x)
+select :: (Ord a) => List a -> L a (List a)
+select = fold (fmap wrap . swap)
 
-out :: (Functor f) => f (Unfold f x) -> Unfold f x
-out = undefined
+swap :: (Ord a) => L a (L a x) -> L a (L a x)
+swap Empty = Empty
+swap (Cons a Empty) = Cons a Empty
+swap (Cons a1 (Cons a2 x)) =
+    if a1 <= a2
+    then Cons a1 (Cons a2 x)
+    else Cons a2 (Cons a1 x)
 
-unOut :: (Functor f) => Unfold f x -> f (Unfold f x)
-unOut (step,x) = fmap (\x' -> (step,x')) (step x)
+data L a x = Empty | Cons a x deriving (Functor)
 
-{-
-data List a = Empty | Cons a (List a) deriving Show
+data Fix f = In {out :: f (Fix f)}
 
-data Stream a = forall s . Stream s (s -> Maybe (a,s))
+type List a = Fix (L a)
 
-listToStream :: List a -> Stream a
-listToStream l = unfold l (\_ -> undefined)
+type Stream a = Fix (L a)
 
-unfold :: s -> (s -> Maybe (a, s)) -> Stream a
-unfold = Stream
+fold :: (Functor f) => (f x -> x) -> Fix f -> x
+fold alg = alg . fmap (fold alg) . out
 
-next :: Stream a -> Maybe (a,Stream a)
-next (Stream s f) = case f s of
-    Nothing -> Nothing
-    Just (a,s') -> Just (a,Stream s' f)
+wrap :: f (Fix f) -> Fix f
+wrap = In
 
-listCase :: List a -> Maybe (a,List a)
-listCase = undefined
+unfold :: (Functor g) => (s -> g s) -> s -> Fix g
+unfold coalg = In . fmap (unfold coalg) . coalg
 
-streamToList :: Stream a -> List a
-streamToList s = case next s of
-    Nothing -> Empty
-    Just (x,s') -> cons x (streamToList s')
+unwrap :: Fix g -> g (Fix g)
+unwrap = out
 
-empty :: List a
-empty = Empty
 
-cons :: a -> List a -> List a
-cons = Cons
 
-foldr :: List a -> (a -> x -> x) -> x -> x
-foldr Empty _ nil = nil
-foldr (Cons x xs) f nil = f x (foldr xs f nil)
 
-insert :: (Ord a) => a -> List a -> List a
-insert x Empty = cons x Empty
-insert x (Cons y ys) = case compare x y of
-    LT -> Cons x (insert y ys)
-    EQ -> Cons x (insert y ys)
-    GT -> Cons y (insert x ys)
-
-sort :: (Ord a) => List a -> List a
-sort l = foldr l insert empty
--}

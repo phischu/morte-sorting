@@ -1,12 +1,12 @@
-{-# LANGUAGE RankNTypes,NoImplicitPrelude,ScopedTypeVariables,ExistentialQuantification,DeriveFunctor #-}
+{-# LANGUAGE RankNTypes,NoImplicitPrelude,ExistentialQuantification,DeriveFunctor #-}
 module MorteSorting where
 
 import Data.Functor (Functor,fmap)
 import Data.Function((.))
-import Prelude (Ord,(<=),undefined)
+import Prelude (Ord,(<=),undefined,id)
 
 fromList :: [a] -> List a
-fromList [] = Mu (\f -> f Empty)
+fromList [] = wrap Empty
 fromList (a:as) = wrap (Cons a (fromList as))
 
 toList :: Stream a -> [a]
@@ -14,9 +14,29 @@ toList stream = case unwrap stream of
     Empty -> []
     Cons a stream' -> a : toList stream'
 
+
 data Mu f = Mu (forall x . (f x -> x) -> x)
 
-data Nu f = forall x .  Nu ((x -> f x,x))
+wrap :: (Functor f) => f (Mu f) -> Mu f
+wrap layer = Mu (\alg -> alg (fmap (fold alg) layer))
+
+fold :: (f x -> x) -> Mu f -> x
+fold alg (Mu mu) = mu alg
+
+data Nu g = forall s . Nu (s -> g s) s
+
+unfold :: (s -> g s) -> s -> Nu g
+unfold coalg s = Nu coalg s
+
+unwrap :: (Functor g) => Nu g -> g (Nu g)
+unwrap (Nu coalg s) = fmap (unfold coalg) (coalg s)
+
+data Fix f = In {out :: f (Fix f)}
+
+
+muToNu :: (Functor f) => Mu f -> Nu f
+muToNu = fold (unfold (fmap unwrap))
+
 
 data L a x = Empty | Cons a x deriving (Functor)
 
@@ -24,17 +44,7 @@ type List a = Mu (L a)
 
 type Stream a = Nu (L a)
 
-fold :: (f x -> x) -> Mu f -> x
-fold f (Mu mu) = mu f
 
-unfold :: (x -> f x) -> x -> Nu f
-unfold f x = Nu (f,x)
-
-wrap :: (Functor f) => f (Mu f) -> Mu f
-wrap fmu = Mu (\f -> f (fmap (fold f) fmu))
-
-unwrap :: (Functor f) => Nu f -> f (Nu f)
-unwrap (Nu (f,s)) = fmap (unfold f) (f s)
 
 insertionSort :: (Ord a) => List a -> Stream a
 insertionSort = fold insert
@@ -51,5 +61,8 @@ select = fold (fmap wrap . swap)
 swap :: (Ord a) => L a (L a x) -> L a (L a x)
 swap Empty = Empty
 swap (Cons a Empty) = Cons a Empty
-swap (Cons a1 (Cons a2 x)) = if a1 <= a2 then Cons a1 (Cons a2 x) else (Cons a2 (Cons a1 x))
+swap (Cons a1 (Cons a2 x)) =
+    if a1 <= a2
+    then Cons a1 (Cons a2 x)
+    else Cons a2 (Cons a1 x)
 
