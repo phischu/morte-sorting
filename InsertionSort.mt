@@ -8,12 +8,22 @@
 -> \(Nu : (* -> *) -> *)
 -> \(fmapL : forall (x:*) -> forall (y:*) -> (x -> y) -> L_a x -> L_a y)
 -> \(fold : forall (f : * -> *) -> forall (x:*) -> (f x -> x) -> Mu f -> x)
--> \(wrap : forall (f : * -> *) -> (forall (x:*) -> forall (y:*) -> (x -> y) -> f x -> f y) -> (forall (f : * -> *) -> forall (x:*) -> (f x -> x) -> Mu f -> x) -> f (Mu f) -> Mu f)
+-> \(wrap :
+        forall (f : * -> *) ->
+        (forall (x:*) ->forall (y:*) -> (x -> y) -> f x -> f y) ->
+        (forall (f : * -> *) -> forall (x:*) -> (f x -> x) -> (forall (x:*) -> (f x -> x) -> x) -> x) ->
+        f (forall (x:*) -> (f x -> x) -> x) ->
+        forall (x:*) -> (f x -> x) -> x)
 -> \(unfold : forall (f: * -> *) -> forall (s:*) -> (s -> f s) -> s -> Nu f)
--> \(unwrap : Nu L_a -> L_a (Nu L_a))
+-> \(unwrap :
+        forall (f : * -> *) ->
+        (forall (x:*) -> forall (y:*) -> (x -> y) -> f x -> f y) ->
+        (forall (f: * -> *) -> forall (s:*) -> (s -> f s) -> s -> Nu f) ->
+        (forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y) ->
+        f (forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y))
 -> \(swap : forall (x:*) -> L_a (L_a x) -> L_a (L_a x))
 ->  fold L_a (Nu L_a) (unfold L_a (L_a (Nu L_a)) (\(s : L_a (Nu L_a)) ->
-        swap (Nu L_a) (fmapL (Nu L_a) (L_a (Nu L_a)) unwrap s)))
+        swap (Nu L_a) (fmapL (Nu L_a) (L_a (Nu L_a)) (unwrap L_a fmapL unfold) s)))
 )
 
 -- L_a
@@ -26,19 +36,33 @@
 (\(f : * -> *) -> forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y)
 
 -- fmapL
-(\(x:*) -> \(y:*) -> \(f : x -> y) -> \(lax : forall (z:*) -> z -> (a -> x -> z) -> z) ->
-    \(z:*) -> \(empty : z) -> \(cons : a -> y -> z) ->
-        lax z empty (\(va:a) -> \(vx:x) -> cons va (f vx)) )
+(   \(x:*)
+->  \(y:*)
+->  \(f : x -> y)
+->  \(lax : forall (z:*) -> z -> (a -> x -> z) -> z)
+->  \(z:*)
+->  \(empty : z)
+->  \(cons : a -> y -> z)
+->  lax z empty (\(va:a) -> \(vx:x) -> cons va (f vx))
+)
 
 -- fold
-(\(f : * -> *) -> \(x:*) -> \(alg : f x -> x) -> \(mu_f : forall (x:*) -> (f x -> x) -> x) -> mu_f x alg)
+(   \(f : * -> *)
+->  \(x:*)
+->  \(alg : f x -> x)
+->  \(mu_f : forall (x:*) -> (f x -> x) -> x)
+->  mu_f x alg
+)
 
 -- wrap
 (   \(f : * -> *)
 ->  \(fmap : forall (x:*) -> forall (y:*) -> (x -> y) -> f x -> f y)
 ->  \(fold : forall (f : * -> *) -> forall (x:*) -> (f x -> x) -> (forall (x:*) -> (f x -> x) -> x) -> x)
 ->  \(f_mu_f : f (forall (x:*) -> (f x -> x) -> x))
-->  \(y:*) -> \(alg : f y -> y) -> alg (fmap (forall (x:*) -> (f x -> x) -> x) y (fold f y alg) f_mu_f))
+->  \(y:*)
+->  \(alg : f y -> y)
+->  alg (fmap (forall (x:*) -> (f x -> x) -> x) y (fold f y alg) f_mu_f)
+)
 
 -- unfold
 (   \(f : * -> *)
@@ -47,7 +71,16 @@
 ->  \(vs : s)
 ->  \(y : *)
 ->  \(caseNu : forall (s:*) -> (s -> f s) -> s -> y)
-->  caseNu s coalg vs)
+->  caseNu s coalg vs
+)
+
+-- unwrap
+(   \(f : * -> *)
+->  \(fmap : forall (x:*) -> forall (y:*) -> (x -> y) -> f x -> f y)
+->  \(unfold : forall (f: * -> *) -> forall (s:*) -> (s -> f s) -> s -> forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y)
+->  \(nu_f : forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y)
+->  nu_f (f (forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y)) (\(s:*) -> \(coalg : s -> f s) -> \(vs:s) -> fmap s (forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y) (unfold f s coalg) (coalg vs))
+)
 
 )
 
