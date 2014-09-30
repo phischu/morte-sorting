@@ -9,10 +9,10 @@
 -> \(fmapL : forall (x:*) -> forall (y:*) -> (x -> y) -> L_a x -> L_a y)
 -> \(fold : forall (f : * -> *) -> forall (x:*) -> (f x -> x) -> Mu f -> x)
 -> \(wrap : forall (f : * -> *) -> (forall (x:*) -> forall (y:*) -> (x -> y) -> f x -> f y) -> (forall (f : * -> *) -> forall (x:*) -> (f x -> x) -> Mu f -> x) -> f (Mu f) -> Mu f)
--> \(unfold : forall (s:*) -> (s -> L_a s) -> s -> Nu L_a)
+-> \(unfold : forall (f: * -> *) -> forall (s:*) -> (s -> f s) -> s -> Nu f)
 -> \(unwrap : Nu L_a -> L_a (Nu L_a))
 -> \(swap : forall (x:*) -> L_a (L_a x) -> L_a (L_a x))
-->  fold L_a (Nu L_a) (unfold (L_a (Nu L_a)) (\(s : L_a (Nu L_a)) ->
+->  fold L_a (Nu L_a) (unfold L_a (L_a (Nu L_a)) (\(s : L_a (Nu L_a)) ->
         swap (Nu L_a) (fmapL (Nu L_a) (L_a (Nu L_a)) unwrap s)))
 )
 
@@ -39,6 +39,15 @@
 ->  \(fold : forall (f : * -> *) -> forall (x:*) -> (f x -> x) -> (forall (x:*) -> (f x -> x) -> x) -> x)
 ->  \(f_mu_f : f (forall (x:*) -> (f x -> x) -> x))
 ->  \(y:*) -> \(alg : f y -> y) -> alg (fmap (forall (x:*) -> (f x -> x) -> x) y (fold f y alg) f_mu_f))
+
+-- unfold
+(   \(f : * -> *)
+->  \(s : *)
+->  \(coalg : s -> f s)
+->  \(vs : s)
+->  \(y : *)
+->  \(caseNu : forall (s:*) -> (s -> f s) -> s -> y)
+->  caseNu s coalg vs)
 
 )
 
