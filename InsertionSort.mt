@@ -16,14 +16,15 @@
         forall (x:*) -> (f x -> x) -> x)
 -> \(unfold : forall (f: * -> *) -> forall (s:*) -> (s -> f s) -> s -> Nu f)
 -> \(unwrap :
+        forall (nu : (* -> *) -> *) ->
         forall (f : * -> *) ->
         (forall (x:*) -> forall (y:*) -> (x -> y) -> f x -> f y) ->
         (forall (f: * -> *) -> forall (s:*) -> (s -> f s) -> s -> Nu f) ->
-        (forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y) ->
-        f (forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y))
+        Nu f ->
+        f (Nu f))
 -> \(swap : forall (x:*) -> L_a (L_a x) -> L_a (L_a x))
 ->  fold L_a (Nu L_a) (unfold L_a (L_a (Nu L_a)) (\(s : L_a (Nu L_a)) ->
-        swap (Nu L_a) (fmapL (Nu L_a) (L_a (Nu L_a)) (unwrap L_a fmapL unfold) s)))
+        swap (Nu L_a) (fmapL (Nu L_a) (L_a (Nu L_a)) (unwrap Nu L_a fmapL unfold) s)))
 )
 
 -- L_a
@@ -59,9 +60,7 @@
 ->  \(fmap : forall (x:*) -> forall (y:*) -> (x -> y) -> f x -> f y)
 ->  \(fold : forall (f : * -> *) -> forall (x:*) -> (f x -> x) -> (forall (x:*) -> (f x -> x) -> x) -> x)
 ->  \(f_mu_f : f (forall (x:*) -> (f x -> x) -> x))
-->  \(y:*)
-->  \(alg : f y -> y)
-->  alg (fmap (forall (x:*) -> (f x -> x) -> x) y (fold f y alg) f_mu_f)
+->  \(y:*) ->  \(alg : f y -> y) ->  alg (fmap (forall (x:*) -> (f x -> x) -> x) y (fold f y alg) f_mu_f)
 )
 
 -- unfold
@@ -75,11 +74,12 @@
 )
 
 -- unwrap
-(   \(f : * -> *)
+(   \(Nu : (* -> *) -> *)
+->  \(f : * -> *)
 ->  \(fmap : forall (x:*) -> forall (y:*) -> (x -> y) -> f x -> f y)
-->  \(unfold : forall (f: * -> *) -> forall (s:*) -> (s -> f s) -> s -> forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y)
-->  \(nu_f : forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y)
-->  nu_f (f (forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y)) (\(s:*) -> \(coalg : s -> f s) -> \(vs:s) -> fmap s (forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y) (unfold f s coalg) (coalg vs))
+->  \(unfold : forall (f: * -> *) -> forall (s:*) -> (s -> f s) -> s -> Nu f)
+->  \(nu_f : Nu f)
+->  nu_f (f (Nu f)) (\(s:*) -> \(coalg : s -> f s) -> \(vs:s) -> fmap s (Nu f) (unfold f s coalg) (coalg vs))
 )
 
 )
