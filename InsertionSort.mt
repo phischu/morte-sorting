@@ -1,19 +1,35 @@
--- let
---    wrap = 
-
+-- Foreign imports
 (  \(a : *)
 ->
+
+-- Module definitions
 (  \(L_a : * -> *)
--> \(List_a : *)
--> \(Stream_a : *)
+-> \(Mu : (* -> *) -> *)
+-> \(Nu : (* -> *) -> *)
 -> \(fmapL : forall (x:*) -> forall (y:*) -> (x -> y) -> L_a x -> L_a y)
--> \(fold : forall (x:*) -> (L_a x -> x) -> List_a -> x)
--> \(wrap : L_a List_a -> List_a)
--> \(unfold : forall (s:*) -> (s -> L_a s) -> s -> Stream_a)
--> \(unwrap : Stream_a -> L_a Stream_a)
+-> \(fold : forall (x:*) -> (L_a x -> x) -> Mu L_a -> x)
+-> \(wrap : L_a (Mu L_a) -> Mu L_a)
+-> \(unfold : forall (s:*) -> (s -> L_a s) -> s -> Nu L_a)
+-> \(unwrap : Nu L_a -> L_a (Nu L_a))
 -> \(swap : forall (x:*) -> L_a (L_a x) -> L_a (L_a x))
-->  fold Stream_a (unfold (L_a Stream_a) (\(s : L_a Stream_a) ->
-        swap Stream_a (fmapL Stream_a (L_a Stream_a) unwrap s)))
-))
+->  fold (Nu L_a) (unfold (L_a (Nu L_a)) (\(s : L_a (Nu L_a)) ->
+        swap (Nu L_a) (fmapL (Nu L_a) (L_a (Nu L_a)) unwrap s)))
+)
+
+-- L_a
+(\(x:*) -> forall (z:*) -> z -> (a -> x -> z) -> z)
+
+-- Mu
+(\(f : * -> *) -> forall (x:*) -> (f x -> x) -> x)
+
+-- Nu
+(\(f : * -> *) -> forall (y:*) -> (forall (s:*) -> (s -> f s) -> s -> y) -> y)
+
+-- fmapL
+(\(x:*) -> \(y:*) -> \(f : x -> y) -> \(lax : forall (z:*) -> z -> (a -> x -> z) -> z) ->
+    \(z:*) -> \(empty : z) -> \(cons : a -> y -> z) ->
+        lax z empty (\(va:a) -> \(vx:x) -> cons va (f vx)) )
+
+)
 
 
