@@ -3,7 +3,7 @@ module MorteSorting where
 
 import Data.Functor (Functor,fmap)
 import Data.Function((.))
-import Prelude (Ord,(<=),undefined,id)
+import Prelude (Ord,(<=),undefined,id,Int)
 
 fromList :: [a] -> List a
 fromList [] = wrap Empty
@@ -37,6 +37,14 @@ data Fix f = In {out :: f (Fix f)}
 muToNu :: (Functor f) => Mu f -> Nu f
 muToNu = fold (unfold (fmap unwrap))
 
+cons :: a -> List a -> List a
+cons a = wrap . Cons a
+
+empty :: List a
+empty = wrap Empty
+
+mylist :: List Int
+mylist = cons 3 (cons 6 (cons 5 empty))
 
 data L a x = Empty | Cons a x deriving (Functor)
 
