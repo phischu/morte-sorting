@@ -100,5 +100,22 @@
 )
 )
 
+--swap
+(
+(   \(L_a : * -> *)
+->  \(empty : forall (x:*) -> L_a x)
+->  \(cons : forall (x:*) -> a -> x -> L_a x)
+->  \(x:*)
+->  \(outer : L_a (L_a x))
+->  outer (L_a (L_a x))
+        (empty (L_a x))
+        (\(vaa : a) -> \(inner : L_a x) -> inner (L_a (L_a x))
+            (cons (L_a x) vaa (empty (L_a x))
+            (\(vab : a) -> \(vx : x) ->
+                (cons (L_a x) vaa (cons x vab vx)))))
+
+)
+)
+
 
 )
