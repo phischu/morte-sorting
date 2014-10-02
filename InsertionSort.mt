@@ -116,6 +116,10 @@
                 (cons (L_a x) vaa (cons x vab vx))))
 
 )
+(\(x:*) -> forall (z:*) -> z -> (a -> x -> z) -> z)
+(\(x:*) -> \(z:*) -> \(empty : z) -> \(cons : a -> x -> z) -> empty)
+(\(x:*) -> \(head : a) -> \(tail : x) -> \(z:*) -> \(empty : z) -> \(cons : a -> x -> z) -> cons head tail)
+(\(x:*) -> \(lax : forall (z:*) -> z -> (a -> x -> z) -> z) -> lax)
 )
 
 
